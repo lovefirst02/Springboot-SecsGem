@@ -6,6 +6,7 @@ import com.example.demo.service.AgvService;
 import com.shimizukenta.secs.SecsException;
 import com.shimizukenta.secs.secs2.Secs2Exception;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,5 +20,10 @@ public class AgvController {
     @PostMapping("/mission")
     public Result send(@RequestBody Mission mission) throws InterruptedException, SecsException, Secs2Exception {
         return agvService.sendMission(mission);
+    }
+
+    @GetMapping("/mission")
+    public Result get(){
+        return agvService.getMission();
     }
 }

@@ -21,6 +21,8 @@ import java.util.*;
 public class AgvActiveConnection {
     public SecsCommunicator conn;
 
+    public List<Map<String,Mission>> commandProtocol = new ArrayList<>();
+
     @Autowired
     Setting setting;
 
@@ -109,6 +111,10 @@ public class AgvActiveConnection {
         System.out.println(result);
     }
 
+    public List<Map<String,Mission>> getAllMission(){
+        return commandProtocol;
+    }
+
     public String sendMission(Mission mission) throws InterruptedException, SecsException, Secs2Exception {
         Secs2 secs = Secs2.list(
                 Secs2.uint4(0),
@@ -182,7 +188,11 @@ public class AgvActiveConnection {
                 true,
                 secs
         );
-//        System.out.println(reply.get().secs2().getByte(0,0));
+        if(reply.get().secs2().getByte(0,0) == 0 || reply.get().secs2().getByte(0,0) == 4){
+            Map<String,Mission> missionMap = new HashMap<>();
+            missionMap.put(mission.commandID,mission);
+            commandProtocol.add(missionMap);
+        }
         return HCACK.get(reply.get().secs2().getByte(0,0)).name();
     }
 }

@@ -24,4 +24,16 @@ public class AgvService {
         }
 
     }
+
+    public Result getMission(){
+        Result result;
+        try{
+            AgvActiveConnection ac = AgvActiveConnection.getInstance();
+            result = ResultResponse.getSucessResult(ac.getAllMission());
+            return result;
+        }catch (Exception e){
+            result = ResultResponse.getFailResult(e.getMessage());
+            return result;
+        }
+    }
 }
