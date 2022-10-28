@@ -1,6 +1,9 @@
 package com.example.demo.secs;
 
 import com.example.demo.model.entity.Mission;
+import com.example.demo.model.entity.Vehicle;
+import com.example.demo.service.AgvMissionService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shimizukenta.secs.SecsCommunicator;
 import com.shimizukenta.secs.SecsException;
 import com.shimizukenta.secs.SecsMessage;
@@ -12,19 +15,33 @@ import com.shimizukenta.secs.hsmsss.HsmsSsCommunicatorConfig;
 import com.shimizukenta.secs.secs2.Secs2;
 import com.shimizukenta.secs.secs2.Secs2Exception;
 import com.shimizukenta.secs.secs2.Secs2Item;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.net.InetSocketAddress;
 import java.util.*;
 
-
+@Component
+@Slf4j
 public class AgvActiveConnection {
     public SecsCommunicator conn;
 
-    public List<Map<String,Mission>> commandProtocol = new ArrayList<>();
+    public Map<String,Mission> commandProtocol = new HashMap<>();
 
     @Autowired
-    Setting setting;
+    protected AgvMissionService agvMissionService;
+
+
+    private static AgvActiveConnection  agvActiveConnection ;
+    @PostConstruct //通过@PostConstruct实现初始化bean之前进行的操作
+    public void init() {
+        agvActiveConnection = this;
+        agvActiveConnection.agvMissionService = this.agvMissionService;
+        // 初使化时将已静态化的testService实例化
+    }
+
 
     private static AgvActiveConnection instance = new AgvActiveConnection();
 
@@ -33,7 +50,7 @@ public class AgvActiveConnection {
         config.socketAddress(new InetSocketAddress("127.0.0.1",5000));
         config.connectionMode(HsmsConnectionMode.ACTIVE);
         config.sessionId(0);
-        config.isEquip(true);
+        config.isEquip(false);
         config.timeout().t3(45.0F);
         config.timeout().t6( 5.0F);
         config.timeout().t7(10.0F);
@@ -46,8 +63,9 @@ public class AgvActiveConnection {
                 case 6:
                     switch (msg.getFunction()){
                         case 11:
-                            Secs2 secs = Secs2.binary((byte) 0x0);
                             try {
+                                agvActiveConnection.agvMissionService.handleEvent(msg);
+                                Secs2 secs = Secs2.binary((byte) 0x0);
                                 conn.send(
                                         msg,
                                         6,
@@ -59,8 +77,33 @@ public class AgvActiveConnection {
                                 throw new RuntimeException(e);
                             } catch (InterruptedException e) {
                                 throw new RuntimeException(e);
+                            } catch (Secs2Exception e) {
+                                throw new RuntimeException(e);
                             }
+                            break;
                     }
+                    break;
+                case 5:
+                    switch (msg.getFunction()){
+                        case 1:
+                            Secs2 secs = Secs2.binary((byte) 0x0);
+                            System.out.printf("S5F1 : %s",msg.secs2());
+                            try {
+                                conn.send(
+                                        msg,
+                                        5,
+                                        2,
+                                        false,
+                                        secs
+                                );
+                            } catch (SecsException e) {
+                                throw new RuntimeException(e);
+                            } catch (InterruptedException e) {
+                                throw new RuntimeException(e);
+                            }
+                            break;
+                    }
+                    break;
             }
 
         });
@@ -77,8 +120,8 @@ public class AgvActiveConnection {
         return instance;
     }
 
-    public void getCurrentStatus() throws InterruptedException, SecsException, Secs2Exception {
-        List<Map<String,Object>> result = new ArrayList<>();
+    public List<Vehicle> getCurrentStatus() throws InterruptedException, SecsException, Secs2Exception {
+        List<Vehicle> result = new ArrayList<>();
         Secs2 secs = Secs2.list(
                 Secs2.uint2(1101)
         );
@@ -94,24 +137,34 @@ public class AgvActiveConnection {
             Integer storageDataCount = 1;
             Map<String, Object> agv = new HashMap<String ,Object>();
             Integer agvDetail = reply.get().secs2().get(0,i).size();
-            agv.put("VehicleID",reply.get().secs2().getAscii(0,i,0));
-            agv.put("VehicleLastPosition",reply.get().secs2().getAscii(0,i,3));
-            agv.put("BatteryValue",reply.get().secs2().getInt(0,i,6,0));
+            agv.put("vehicleID",reply.get().secs2().getAscii(0,i,0));
+            agv.put("iOperatorMainStatus",reply.get().secs2().getInt(0,i,1,0));
+            agv.put("vehicleMotion",reply.get().secs2().getInt(0,i,2,0));
+            agv.put("iOperatorLocation",reply.get().secs2().getAscii(0,i,3));
+            agv.put("valueOfLaserScore",reply.get().secs2().getInt(0,i,4,0));
+            agv.put("vehicleLastPosition",reply.get().secs2().getAscii(0,i,5));
+            agv.put("batteryValue",reply.get().secs2().getInt(0,i,6,0));
+            agv.put("temperatureOfBattery",reply.get().secs2().getInt(0,i,7,0));
+            agv.put("batteryCurrentDraw",reply.get().secs2().getInt(0,i,8,0));
+            agv.put("voltageOfBattery",reply.get().secs2().getInt(0,i,9,0));
             for(int x = 10; x < agvDetail; x++){
                 if (reply.get().secs2().get(0,i,x).secs2Item() == Secs2Item.UINT2){
-                    agv.put(String.format("StatusOfStorage_%d",storageCount),reply.get().secs2().getInt(0,i,x,0));
+                    agv.put(String.format("statusOfStorage%d",storageCount),reply.get().secs2().getInt(0,i,x,0));
                     storageCount = storageCount + 1;
                 } else if (reply.get().secs2().get(0,i,x).secs2Item() == Secs2Item.ASCII) {
-                    agv.put(String.format("InformationOfStorage_%d",storageDataCount),reply.get().secs2().getAscii(0,i,x));
+                    agv.put(String.format("informationOfStorage%d",storageDataCount),reply.get().secs2().getAscii(0,i,x));
                     storageDataCount = storageDataCount + 1;
                 }
             }
-            result.add(agv);
+            ObjectMapper mergeMap = new ObjectMapper();
+            Vehicle mergeMapResult = mergeMap.convertValue(agv,Vehicle.class);
+            result.add(mergeMapResult);
+//            log.info(mergeMapResult.vehicleID);
         }
-        System.out.println(result);
+        return result;
     }
 
-    public List<Map<String,Mission>> getAllMission(){
+    public Map<String,Mission> getAllMission(){
         return commandProtocol;
     }
 
@@ -189,9 +242,8 @@ public class AgvActiveConnection {
                 secs
         );
         if(reply.get().secs2().getByte(0,0) == 0 || reply.get().secs2().getByte(0,0) == 4){
-            Map<String,Mission> missionMap = new HashMap<>();
-            missionMap.put(mission.commandID,mission);
-            commandProtocol.add(missionMap);
+            commandProtocol.put(mission.getCommandID(),mission);
+            agvActiveConnection.agvMissionService.updateMission(mission);
         }
         return HCACK.get(reply.get().secs2().getByte(0,0)).name();
     }

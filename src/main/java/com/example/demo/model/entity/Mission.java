@@ -1,19 +1,59 @@
 package com.example.demo.model.entity;
 
+import javax.persistence.*;
+
+@Entity
+@Table(name = "agvc_current_mission")
 public class Mission {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    Integer id;
+
+    @Column(name = "Datatime")
+    public String dataTime;
+
+    @Column(name = "action",columnDefinition = "varchar(255) default 'recv'")
+    public String action = "recv";
+
+    @Column(name = "DataID",columnDefinition = "int default 0")
+    public Integer dataID = 0;
+    @Column(name = "CommandID")
     public String commandID;
+    @Column(name = "Priority")
     public Integer priority;
-    public Integer replace;
+
+    @Column(name = "Replace")
+    public Integer replace = 0;
+    @Column(name = "VehicleID")
     public String vehicleID;
+    @Column(name = "CarrierID1")
     public String carrierID1;
+    @Column(name = "WCount1")
     public String wCount1;
+    @Column(name = "SourcePort1")
     public String sourcePort1;
+    @Column(name = "DestPort1")
     public String destPort1;
+    @Column(name = "WaferQty")
     public String wafer_qty;
+    @Column(name = "CarrierID2")
     public String carrierID2;
+    @Column(name = "WCount2")
     public String wCount2;
+    @Column(name = "SourcePort2")
     public String sourcePort2;
+    @Column(name = "DestPort2")
     public String destPort2;
+
+    @Column(name = "TransferCompletedStatus")
+    public String transferCompleteStatus;
+
+    @Column(name = "TransferCompletedCode")
+    public Integer transfetCompleteCode;
+
+    @Column(name = "TransferStatus")
+    public String transferStatus;
 
     public String getCommandID() {
         return commandID;
@@ -117,5 +157,61 @@ public class Mission {
 
     public void setDestPort2(String destPort2) {
         this.destPort2 = destPort2;
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getDataTime() {
+        return dataTime;
+    }
+
+    public void setDataTime(String dataTime) {
+        this.dataTime = dataTime;
+    }
+
+    public String getAction() {
+        return action;
+    }
+
+    public void setAction(String action) {
+        this.action = action;
+    }
+
+    public Integer getDataID() {
+        return dataID;
+    }
+
+    public void setDataID(Integer dataID) {
+        this.dataID = dataID;
+    }
+
+    public String getTransferCompleteStatus() {
+        return transferCompleteStatus;
+    }
+
+    public void setTransferCompleteStatus(String transferCompleteStatus) {
+        this.transferCompleteStatus = transferCompleteStatus;
+    }
+
+    public Integer getTransfetCompleteCode() {
+        return transfetCompleteCode;
+    }
+
+    public void setTransfetCompleteCode(Integer transfetCompleteCode) {
+        this.transfetCompleteCode = transfetCompleteCode;
+    }
+
+    public String getTransferStatus() {
+        return transferStatus;
+    }
+
+    public void setTransferStatus(String transferStatus) {
+        this.transferStatus = transferStatus;
     }
 }

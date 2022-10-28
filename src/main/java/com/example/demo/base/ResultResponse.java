@@ -2,6 +2,7 @@ package com.example.demo.base;
 
 public class ResultResponse {
     private static final String DEFAULT_SUCESS_MESSAGE = "SUCESS";
+    private static final String DEFAULT_FAIL_MESSAGE = "UNKNOW_ERROR";
 
     public static Result getSucessResult(){
         return new Result()
@@ -19,6 +20,6 @@ public class ResultResponse {
     public static Result getFailResult(String message){
         return new Result()
                 .setCode(ResultCode.FAIL)
-                .setMessage(message);
+                .setMessage(message == null ? DEFAULT_FAIL_MESSAGE:message);
     }
 }
